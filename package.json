@@ -1,0 +1,55 @@
+{
+  "name": "port-manager",
+  "version": "1.0.0",
+  "description": "A port leasing system for managing unique port allocations across git worktrees",
+  "type": "module",
+  "bin": {
+    "port-manager": "./src/port-manager.mjs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "release:patch": "npm version patch && git push && git push --tags",
+    "release:minor": "npm version minor && git push && git push --tags",
+    "release:major": "npm version major && git push && git push --tags",
+    "release:beta": "npm version prerelease --preid=beta && git push && git push --tags",
+    "release:alpha": "npm version prerelease --preid=alpha && git push && git push --tags",
+    "pm": "node ./src/port-manager.mjs"
+  },
+  "keywords": [
+    "port",
+    "port-manager",
+    "worktree",
+    "development",
+    "cli",
+    "git",
+    "port-allocation",
+    "port-leasing"
+  ],
+  "author": "Wayne Brantley",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/waynebrantley/port-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/waynebrantley/port-manager/issues"
+  },
+  "homepage": "https://github.com/waynebrantley/port-manager#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  },
+  "files": [
+    "src/**/*",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
