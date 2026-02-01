@@ -6,7 +6,7 @@ This repository uses GitHub Actions to automatically publish to npm with **Trust
 
 ### 1. Configure npm Trusted Publishing
 
-1. Go to your package page on npm: `https://www.npmjs.com/package/port-manager/access`
+1. Go to your package page on npm: `https://www.npmjs.com/package/@wbrantley/port-manager/access`
 2. Navigate to "Publishing access" section
 3. Click "Add GitHub Actions"
 4. Configure:
@@ -83,7 +83,7 @@ After publishing, users can verify the provenance by:
 npm view port-manager --json | jq .dist
 ```
 
-Or on the npm website at: `https://www.npmjs.com/package/port-manager`
+Or on the npm website at: `https://www.npmjs.com/package/@wbrantley/port-manager`
 
 ## References
 

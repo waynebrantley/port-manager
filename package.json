@@ -1,5 +1,5 @@
 {
-  "name": "port-manager",
+  "name": "@wbrantley/port-manager",
   "version": "1.0.0",
   "description": "A port leasing system for managing unique port allocations across git worktrees",
   "type": "module",

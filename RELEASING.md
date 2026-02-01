@@ -142,7 +142,7 @@ For the very first release (v1.0.0):
    ```
 
 2. Configure npm Trusted Publishing:
-   - Go to https://www.npmjs.com/package/port-manager/access
+   - Go to https://www.npmjs.com/package/@wbrantley/port-manager/access
    - Add GitHub Actions publishing access
    - Repository: `waynebrantley/port-manager`
    - Workflow: `.github/workflows/publish.yml`

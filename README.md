@@ -23,23 +23,23 @@ Install globally with your preferred package manager:
 
 ```bash
 # Using npm
-npm install -g port-manager
+npm install -g @wbrantley/port-manager
 
 # Using pnpm
-pnpm install -g port-manager
+pnpm install -g @wbrantley/port-manager
 
 # Using yarn
-yarn global add port-manager
+yarn global add @wbrantley/port-manager
 ```
 
 Or use without installation:
 
 ```bash
 # Using npx
-npx port-manager lease frontend
+npx @wbrantley/port-manager lease frontend
 
 # Using pnpm dlx
-pnpm dlx port-manager lease frontend
+pnpm dlx @wbrantley/port-manager lease frontend
 ```
 
 ## Why Port Manager?
@@ -289,15 +289,7 @@ This package uses GitHub Actions for automated publishing with provenance attest
 /release beta
 ```
 
-**Quick Release Script:**
-```bash
-./scripts/release.sh patch    # Bug fixes (1.0.0 → 1.0.1)
-./scripts/release.sh minor    # New features (1.0.0 → 1.1.0)
-./scripts/release.sh major    # Breaking changes (1.0.0 → 2.0.0)
-./scripts/release.sh beta     # Beta pre-release
-```
-
-**Or use npm scripts:**
+**Or use pnpm scripts:**
 ```bash
 pnpm run release:patch    # Bug fixes
 pnpm run release:minor    # New features
@@ -313,20 +305,6 @@ pnpm publish --provenance
 ```
 
 See [.github/NPM_PUBLISHING_SETUP.md](.github/NPM_PUBLISHING_SETUP.md) for setup instructions.
-
-## Migration from Shell Scripts
-
-This package replaces the previous PowerShell and Bash scripts with a single cross-platform Node.js implementation. The functionality remains the same, with improved:
-- Cross-platform compatibility
-- No external dependencies (jq, etc.)
-- Easier distribution via pnpm/npm
-- Better error handling
-
-### Directory Location
-
-The registry is now stored in `~/.port-manager/registry.json` instead of `~/.ports/registry.json`. If you have an existing registry at the old location, you can either:
-- Move it: `mv ~/.ports ~/.port-manager`
-- Or start fresh: `port-manager init`
 
 ## License
 

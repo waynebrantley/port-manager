@@ -8,3 +8,5 @@ dist/
 # pnpm
 .pnpm-store/
 .pnpm-debug.log
+
+.claude/settings.json

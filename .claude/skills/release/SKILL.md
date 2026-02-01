@@ -62,14 +62,14 @@ You are helping the user create a release of the port-manager npm package. Follo
 
 6. **For first release only** - If this is version 1.0.0 or the first release:
    - Inform the user they need to manually publish first: `pnpm publish --provenance`
-   - Then configure npm Trusted Publishing at https://www.npmjs.com/package/port-manager/access
+   - Then configure npm Trusted Publishing at https://www.npmjs.com/package/@wbrantley/port-manager/access
    - Configure:
      - Repository: `waynebrantley/port-manager`
      - Workflow: `.github/workflows/publish.yml`
 
 7. **Monitor the release**:
    - Provide the GitHub Actions workflow URL to monitor: https://github.com/waynebrantley/port-manager/actions
-   - Provide the npm package URL: https://www.npmjs.com/package/port-manager
+   - Provide the npm package URL: https://www.npmjs.com/package/@wbrantley/port-manager
 
 ## Important Notes
 
