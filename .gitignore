@@ -10,3 +10,4 @@ dist/
 .pnpm-debug.log
 
 .claude/settings.json
+.release-temp/
