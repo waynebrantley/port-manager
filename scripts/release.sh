@@ -3,6 +3,12 @@ set -e
 
 # Release helper script for port-manager
 # Usage: ./scripts/release.sh [patch|minor|major|beta|alpha]
+#
+# For stable releases: creates a PR with the version bump.
+# When merged, the auto-release workflow creates the tag and GitHub Release,
+# which triggers the publish workflow to npm.
+#
+# For pre-releases: tags and releases immediately from the current branch.
 
 RELEASE_TYPE="${1:-patch}"
 MAIN_BRANCH="${MAIN_BRANCH:-main}"
@@ -64,35 +70,53 @@ esac
 
 echo "New version: $NEW_VERSION"
 
-# Commit version bump
-git add package.json
-git commit -m "Release $NEW_VERSION"
+if [[ "$IS_PRERELEASE" == "false" ]]; then
+    # Stable release: create branch and PR, auto-release workflow handles the rest
+    RELEASE_BRANCH="release/$NEW_VERSION"
+    git checkout -b "$RELEASE_BRANCH"
 
-# Push commit to current branch
-echo "Pushing version bump..."
-git push origin "$CURRENT_BRANCH"
+    git add package.json
+    git commit -m "Release $NEW_VERSION"
 
-# Create and push tag
-echo "Creating tag $NEW_VERSION..."
-git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
-git push origin "$NEW_VERSION"
+    echo "Pushing release branch..."
+    git push -u origin "$RELEASE_BRANCH"
 
-# Generate release notes
-PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+    echo "Creating pull request..."
+    PR_URL=$(gh pr create \
+        --title "Release $NEW_VERSION" \
+        --body "Version bump to $NEW_VERSION. When merged, the auto-release workflow will create the tag and GitHub Release." \
+        --base "$MAIN_BRANCH" \
+        --head "$RELEASE_BRANCH")
 
-if [[ -n "$PREVIOUS_TAG" ]]; then
-    COMPARE_LINK="https://github.com/waynebrantley/port-manager/compare/${PREVIOUS_TAG}...${NEW_VERSION}"
-    RELEASE_NOTES="## What's Changed
-
-Full changelog: $COMPARE_LINK"
+    echo ""
+    echo "Release PR created: $PR_URL"
+    echo ""
+    echo "Next: merge the PR. Everything else is automatic."
+    echo "  - Auto-release workflow creates the tag and GitHub Release"
+    echo "  - Publish workflow publishes to npm"
+    echo ""
 else
-    RELEASE_NOTES="Release $NEW_VERSION"
-fi
+    # Pre-release: commit, tag, and release immediately
+    git add package.json
+    git commit -m "Release $NEW_VERSION"
 
-# Create GitHub Release
-echo "Creating GitHub Release..."
+    echo "Pushing changes..."
+    git push origin "$CURRENT_BRANCH"
 
-if [[ "$IS_PRERELEASE" == "true" ]]; then
+    echo "Creating tag $NEW_VERSION..."
+    git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
+    git push origin "$NEW_VERSION"
+
+    echo "Creating GitHub pre-release..."
+    PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+    if [[ -n "$PREVIOUS_TAG" ]]; then
+        RELEASE_NOTES="Pre-release $NEW_VERSION from branch \`$CURRENT_BRANCH\`
+
+Full changelog: https://github.com/waynebrantley/port-manager/compare/${PREVIOUS_TAG}...${NEW_VERSION}"
+    else
+        RELEASE_NOTES="Pre-release $NEW_VERSION"
+    fi
+
     gh release create "$NEW_VERSION" \
         --title "$NEW_VERSION" \
         --notes "$RELEASE_NOTES" \
@@ -100,22 +124,13 @@ if [[ "$IS_PRERELEASE" == "true" ]]; then
         --target "$CURRENT_BRANCH"
 
     echo ""
-    echo "Pre-release $NEW_VERSION created successfully!"
+    echo "Pre-release $NEW_VERSION created!"
     echo "  Tag: $NEW_VERSION"
     echo "  Branch: $CURRENT_BRANCH"
     echo "  npm tag: next"
     echo "  Install: npm install @wbrantley/port-manager@next"
-else
-    gh release create "$NEW_VERSION" \
-        --title "$NEW_VERSION" \
-        --notes "$RELEASE_NOTES"
-
-    echo ""
-    echo "Release $NEW_VERSION created successfully!"
-    echo "  Tag: $NEW_VERSION"
 fi
 
-echo "  npm publish will run automatically via GitHub Actions"
 echo ""
 echo "Monitor:"
 echo "  Actions: https://github.com/waynebrantley/port-manager/actions"
