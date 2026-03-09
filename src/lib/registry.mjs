@@ -261,8 +261,10 @@ export function deletePool(registry, name) {
   const leasesInPool = registry.leases.filter(lease => lease.pool === name);
   const count = leasesInPool.length;
 
-  // Remove the pool
-  delete registry.pools[name];
+  // Only remove the pool if there are no active leases
+  if (count === 0) {
+    delete registry.pools[name];
+  }
 
   return count;
 }
