@@ -5,6 +5,9 @@ coverage/
 .vitest/
 dist/
 
+# npm (this project uses pnpm)
+package-lock.json
+
 # pnpm
 .pnpm-store/
 .pnpm-debug.log

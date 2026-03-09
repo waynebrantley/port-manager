@@ -241,15 +241,15 @@ async function doList(filterPool, showGlobal) {
   }
 
   // Print header
-  console.log('PORT   POOL          TAG        IDENTIFIER                      LEASED AT');
-  console.log('----   ----          ---        ----------                      ---------');
+  console.log('PORT   POOL               TAG        IDENTIFIER                                           LEASED AT');
+  console.log('----   ----               ---        ----------                                           ---------');
 
   // Print leases
   for (const lease of leases) {
     const port = String(lease.port).padEnd(6);
-    const pool = (lease.pool || '').padEnd(13);
+    const pool = (lease.pool || '').padEnd(18);
     const tag = (lease.tag || '').padEnd(10);
-    const id = (lease.identifier || '').substring(0, 30).padEnd(31);
+    const id = (lease.identifier || '').substring(0, 50).padEnd(51);
     const date = lease.leasedAt || '';
     console.log(`${port} ${pool} ${tag} ${id} ${date}`);
   }
@@ -394,13 +394,13 @@ async function doPoolList(poolName) {
       if (poolInfo.leases.length === 0) {
         console.log('No ports currently reserved in this pool');
       } else {
-        console.log('PORT   TAG        IDENTIFIER                           LEASED AT');
-        console.log('----   ---        ----------                           ---------');
+        console.log('PORT   TAG        IDENTIFIER                                           LEASED AT');
+        console.log('----   ---        ----------                                           ---------');
 
         for (const lease of poolInfo.leases) {
           const port = String(lease.port).padEnd(6);
           const tag = (lease.tag || '').padEnd(10);
-          const id = (lease.identifier || '').substring(0, 40).padEnd(40);
+          const id = (lease.identifier || '').substring(0, 50).padEnd(51);
           const date = lease.leasedAt || '';
           console.log(`${port} ${tag} ${id} ${date}`);
         }
@@ -413,15 +413,12 @@ async function doPoolList(poolName) {
         return;
       }
 
-      console.log('POOL          RANGE START    RANGE END      TOTAL PORTS');
-      console.log('----          -----------    ---------      -----------');
+      console.log('POOL               PORTS');
+      console.log('----               -----');
 
       for (const pool of pools) {
-        const name = pool.name.padEnd(13);
-        const start = String(pool.rangeStart).padEnd(14);
-        const end = String(pool.rangeEnd).padEnd(14);
-        const total = pool.rangeEnd - pool.rangeStart + 1;
-        console.log(`${name} ${start} ${end} ${total}`);
+        const name = pool.name.padEnd(18);
+        console.log(`${name} ${pool.rangeStart}-${pool.rangeEnd}`);
       }
     }
   } catch (err) {

@@ -2,7 +2,7 @@
 name: release
 description: Create and publish a new release
 author: Wayne Brantley
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Release Skill
@@ -20,80 +20,60 @@ You are helping the user create a release of the port-manager npm package. Follo
    - `beta` - Beta pre-release (1.0.0 → 1.0.1-beta.0)
    - `alpha` - Alpha pre-release (1.0.0 → 1.0.1-alpha.0)
 
-2. **Check for uncommitted changes**:
-   ```bash
-   git status -s
-   ```
-   If there are uncommitted changes, inform the user and ask if they want to:
-   - Commit them now (you can help with commit message)
-   - Stash them
-   - Cancel the release
+2. **Verify prerequisites**:
+   - Confirm `gh` CLI is available: `command -v gh`
+   - If not installed, stop and tell the user to install it from https://cli.github.com/ — the release scripts require it.
 
-3. **Check current branch**:
-   ```bash
-   git rev-parse --abbrev-ref HEAD
-   ```
-   Inform the user which branch they're releasing from. Confirm if this is correct.
-
-4. **Check if gh CLI is available**:
-   ```bash
-   command -v gh
-   ```
-   If available, offer to use the automated script. If not, use the npm scripts method.
-
-5. **Execute the release**:
-
-   **If gh CLI is available:**
+3. **Execute the release script**:
    ```bash
    ./scripts/release.sh [type]
    ```
+   The script handles all validation (uncommitted changes, correct branch, running tests) and will exit with an error if anything is wrong. Do NOT duplicate these checks before running the script.
 
-   **If gh CLI is NOT available:**
-   ```bash
-   pnpm run release:[type]
-   ```
-   Then guide the user to create the GitHub Release manually:
-   - Go to https://github.com/waynebrantley/port-manager/releases
-   - Click "Draft a new release"
-   - Select the tag that was just created
-   - Add release notes
-   - For beta/alpha: Check "Set as a pre-release"
-   - Click "Publish release"
+   **Branch rules enforced by the script:**
+   - Stable releases (`patch`, `minor`, `major`) must be run from the `main` branch
+   - Pre-releases (`beta`, `alpha`) can be run from any branch
 
-6. **For first release only** - If this is version 1.0.0 or the first release:
-   - Inform the user they need to manually publish first: `pnpm publish --provenance`
-   - Then configure npm Trusted Publishing at https://www.npmjs.com/package/@wbrantley/port-manager/access
-   - Configure:
-     - Repository: `waynebrantley/port-manager`
-     - Workflow: `.github/workflows/publish.yml`
+4. **Post-release steps depend on release type**:
 
-7. **Monitor the release**:
-   - Provide the GitHub Actions workflow URL to monitor: https://github.com/waynebrantley/port-manager/actions
-   - Provide the npm package URL: https://www.npmjs.com/package/@wbrantley/port-manager
+   **For stable releases (patch/minor/major):**
+   The script creates a PR. Tell the user:
+   - Wait for CI to pass on the PR
+   - Merge the PR (squash merge)
+   - Then run: `./scripts/finalize-release.sh`
+   - The finalize script creates the git tag and GitHub Release on the merged commit
+   - The GitHub Release triggers the publish workflow to npm
+
+   **For pre-releases (beta/alpha):**
+   The script creates the tag and GitHub Release immediately. Tell the user:
+   - The publish workflow will run automatically
+   - The package will be published to npm under the `next` tag
+   - Install with: `npm install @wbrantley/port-manager@next`
+
+5. **Provide monitoring links**:
+   - GitHub Actions: https://github.com/waynebrantley/port-manager/actions
+   - npm package: https://www.npmjs.com/package/@wbrantley/port-manager
 
 ## Important Notes
 
-- Always run tests before releasing
-- Pre-releases (beta/alpha) are published to npm under the `next` tag
-- Regular releases are published under the `latest` tag
-- The GitHub Actions workflow automatically publishes to npm after a GitHub Release is created
-- For first release, manual npm publish is required to set up the package
+- This project uses **pnpm** as its package manager
+- The `release.sh` script runs `pnpm test` before proceeding
+- Pre-releases are published to npm under the `next` tag
+- Stable releases are published under the `latest` tag
+- The publish workflow (`.github/workflows/publish.yml`) triggers on GitHub Release creation
+- Do NOT use `pnpm run release:*` scripts in package.json — they are legacy and do not follow the PR-based workflow
 
 ## Examples
 
 **User says:** `/release patch`
-- You determine they want a patch release
-- Check for uncommitted changes
-- Check current branch
-- Execute `./scripts/release.sh patch` (if gh available) or `pnpm run release:patch`
-- Guide through any remaining manual steps
-- Provide monitoring URLs
+- Run `./scripts/release.sh patch`
+- Guide through PR merge + finalize steps
 
 **User says:** `/release`
 - Ask which type of release they want
-- Then proceed with the steps above
+- Then run the script
 
-**User says:** `/release beta from feature branch`
-- Confirm they want to release beta from current branch
-- Proceed with beta release
-- Remind them that beta releases use the `next` tag on npm
+**User says:** `/release beta`
+- Run `./scripts/release.sh beta`
+- Inform that tag and release are created immediately
+- Provide monitoring links
