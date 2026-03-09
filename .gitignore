@@ -13,4 +13,3 @@ package-lock.json
 .pnpm-debug.log
 
 .claude/settings.json
-.release-temp/
