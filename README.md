@@ -216,6 +216,40 @@ You can customize these pools by:
 - Using the `port-manager pool` commands to add, update, or delete pools
 - The registry is automatically created on first use with default pools
 
+### Sharing one registry across hosts (Windows + WSL)
+
+By default the registry lives under `os.homedir()`. A Windows host and a WSL
+distro on the same machine resolve that to two different places, so each keeps a
+private set of leases and both will happily hand out the same port.
+
+Point both at one registry with `PORT_MANAGER_REGISTRY_DIR`:
+
+```bash
+# WSL — ~/.bashrc
+export PORT_MANAGER_REGISTRY_DIR="/mnt/c/Users/<you>/.port-manager"
+```
+
+Windows needs no change: that is already its default location.
+
+Paths are stored in a canonical Windows-style form (`C:/Projects/x`), so a
+worktree reached as `C:\Projects\x` from Windows and `/mnt/c/Projects/x` from
+WSL resolves to **one** identity and **one** lease. Existing registries are
+unaffected — the canonical form is what Windows hosts already wrote.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT_MANAGER_REGISTRY_DIR` | `~/.port-manager` | Directory holding `registry.json` and its lock. Set on every host that should share leases. |
+| `PORT_MANAGER_WSL_MOUNT_ROOT` | `/mnt` | Where WSL mounts Windows drives. Change only if you have overridden `automount.root` in `/etc/wsl.conf`. |
+
+The lock file always sits beside the registry it guards, so a shared registry
+stays serialized across hosts.
+
+> **Note:** a git worktree created by Windows git stores an absolute
+> `gitdir: C:/...` in its `.git` file, which WSL git cannot resolve (and vice
+> versa) — so automatic project detection fails there regardless of the registry.
+> Fix the worktrees with `git config --global worktree.useRelativePaths true`
+> followed by `git worktree repair` (requires git 2.48+ on both sides).
+
 ### Tagged Leases
 
 Tags allow you to lease multiple ports from the same pool for different purposes:
@@ -243,7 +277,7 @@ Run `port-manager cleanup` to remove stale leases.
 ### Concurrency
 
 File locking prevents race conditions:
-- Lock file created at `~/.port-manager/registry.json.lock`
+- Lock file created beside the registry, as `<registry-dir>/registry.json.lock`
 - Stale locks (>60 seconds) are automatically removed
 - 30-second timeout waiting for lock
 

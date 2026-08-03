@@ -4,8 +4,14 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
+import { toNativePath } from './paths.mjs';
 
-export const PORTS_DIR = join(homedir(), '.port-manager');
+// PORT_MANAGER_REGISTRY_DIR lets several hosts share one registry — notably a
+// Windows host and a WSL distro on the same machine, which otherwise resolve
+// homedir() to different places and each keep a private set of leases.
+export const PORTS_DIR = process.env.PORT_MANAGER_REGISTRY_DIR
+  ? toNativePath(process.env.PORT_MANAGER_REGISTRY_DIR)
+  : join(homedir(), '.port-manager');
 export const REGISTRY_PATH = join(PORTS_DIR, 'registry.json');
 
 /**
@@ -188,8 +194,10 @@ export async function findStaleLeases(registry, { isPortInUse, staleThresholdDay
     let isStale = false;
     let reason = '';
 
-    // Check if worktree path exists
-    if (lease.worktreePath && !existsSync(lease.worktreePath)) {
+    // Check if worktree path exists. Stored paths are canonical (C:/...), which
+    // no WSL host can stat directly — convert before asking the filesystem, or
+    // every Windows-written lease reads as stale here.
+    if (lease.worktreePath && !existsSync(toNativePath(lease.worktreePath))) {
       isStale = true;
       reason = 'worktree path does not exist';
     }
