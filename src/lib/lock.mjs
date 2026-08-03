@@ -3,19 +3,27 @@
 import { open, unlink, stat, mkdir } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { REGISTRY_PATH } from './registry.mjs';
 
-const PORTS_DIR = join(homedir(), '.port-manager');
-const LOCK_PATH = join(PORTS_DIR, 'registry.json.lock');
 const STALE_LOCK_AGE_MS = 60000; // 60 seconds
 
 /**
- * Ensure the port-manager directory exists.
+ * Resolve the lock file that guards a given registry.
+ *
+ * The lock must sit beside the registry it protects. A lock derived from
+ * homedir() instead would leave a shared registry (PORT_MANAGER_REGISTRY_DIR)
+ * completely unguarded across hosts, since each host would take a different
+ * lock while mutating the same file.
  */
-async function ensurePortsDir() {
-  if (!existsSync(PORTS_DIR)) {
-    await mkdir(PORTS_DIR, { recursive: true });
+export function getLockPath(registryPath = REGISTRY_PATH) {
+  return join(dirname(registryPath), 'registry.json.lock');
+}
+
+async function ensureLockDir(lockPath) {
+  const dir = dirname(lockPath);
+  if (!existsSync(dir)) {
+    await mkdir(dir, { recursive: true });
   }
 }
 
@@ -24,8 +32,9 @@ async function ensurePortsDir() {
  * Will retry until timeout or lock is acquired.
  * Automatically removes stale locks.
  */
-export async function acquireLock(timeoutMs = 30000) {
-  await ensurePortsDir();
+export async function acquireLock(timeoutMs = 30000, registryPath = REGISTRY_PATH) {
+  const LOCK_PATH = getLockPath(registryPath);
+  await ensureLockDir(LOCK_PATH);
   const startTime = Date.now();
 
   while (true) {
@@ -79,9 +88,9 @@ export async function acquireLock(timeoutMs = 30000) {
 /**
  * Release the lock by removing the lock file.
  */
-export async function releaseLock() {
+export async function releaseLock(registryPath = REGISTRY_PATH) {
   try {
-    await unlink(LOCK_PATH);
+    await unlink(getLockPath(registryPath));
   } catch (err) {
     // Ignore ENOENT - lock file already removed
     if (err.code !== 'ENOENT') {
@@ -94,11 +103,11 @@ export async function releaseLock() {
  * Execute a function with the lock acquired.
  * Automatically releases the lock when done.
  */
-export async function withLock(fn, timeoutMs = 30000) {
-  await acquireLock(timeoutMs);
+export async function withLock(fn, timeoutMs = 30000, registryPath = REGISTRY_PATH) {
+  await acquireLock(timeoutMs, registryPath);
   try {
     return await fn();
   } finally {
-    await releaseLock();
+    await releaseLock(registryPath);
   }
 }

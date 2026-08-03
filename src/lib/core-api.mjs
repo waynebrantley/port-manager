@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { existsSync } from 'node:fs';
 import { withLock } from './lock.mjs';
 import { isPortInUse } from './port-check.mjs';
+import { toCanonicalPath, toIdentifier } from './paths.mjs';
 import {
   getRegistry,
   saveRegistry,
@@ -39,12 +40,23 @@ export class PortManagerAPI {
   }
 
   /**
+   * Run fn holding the lock that guards *this instance's* registry.
+   * Every mutation goes through here so the lock always sits beside the
+   * registry being written, including a shared cross-host one.
+   */
+  async _withRegistryLock(fn, timeoutMs = 30000) {
+    return await withLock(fn, timeoutMs, this.registryPath);
+  }
+
+  /**
    * Get the git root directory by walking up from current directory.
    */
   async getGitRoot() {
     try {
       const { stdout } = await execAsync('git rev-parse --show-toplevel');
-      return stdout.trim();
+      // Canonical form so a worktree on a Windows drive gets one identity
+      // whether it was reached as C:\Projects\x or /mnt/c/Projects/x.
+      return toCanonicalPath(stdout.trim());
     } catch (err) {
       return null;
     }
@@ -58,8 +70,7 @@ export class PortManagerAPI {
     if (!gitRoot) {
       return null;
     }
-    // Normalize path separators and remove drive colons for consistency
-    return gitRoot.replace(/\\/g, '/').replace(/:/g, '');
+    return toIdentifier(gitRoot);
   }
 
   /**
@@ -80,11 +91,10 @@ export class PortManagerAPI {
       }
     }
 
-    if (!worktreePath) {
-      worktreePath = await this.getGitRoot();
-    }
+    // getGitRoot() already canonicalizes; an explicitly supplied path has not been.
+    worktreePath = worktreePath ? toCanonicalPath(worktreePath) : await this.getGitRoot();
 
-    return await withLock(async () => {
+    return await this._withRegistryLock(async () => {
       const registry = await getRegistry(this.registryPath);
 
       // Validate pool
@@ -137,7 +147,7 @@ export class PortManagerAPI {
       }
     }
 
-    return await withLock(async () => {
+    return await this._withRegistryLock(async () => {
       const registry = await getRegistry(this.registryPath);
       let removedCount;
 
@@ -224,7 +234,7 @@ export class PortManagerAPI {
    * Clean up stale leases.
    */
   async cleanup(isDryRun = false) {
-    return await withLock(async () => {
+    return await this._withRegistryLock(async () => {
       const registry = await getRegistry(this.registryPath);
       const staleLeases = await findStaleLeases(registry, { isPortInUse: this.portChecker });
 
@@ -337,7 +347,7 @@ export class PortManagerAPI {
       throw new Error('Range start must be less than range end');
     }
 
-    return await withLock(async () => {
+    return await this._withRegistryLock(async () => {
       const registry = await getRegistry(this.registryPath);
 
       addPool(registry, poolName, rangeStart, rangeEnd);
@@ -359,7 +369,7 @@ export class PortManagerAPI {
       throw new Error('Range start must be less than range end');
     }
 
-    return await withLock(async () => {
+    return await this._withRegistryLock(async () => {
       const registry = await getRegistry(this.registryPath);
 
       // Check if any leases would be out of range
@@ -387,7 +397,7 @@ export class PortManagerAPI {
       throw new Error('Pool name is required');
     }
 
-    return await withLock(async () => {
+    return await this._withRegistryLock(async () => {
       const registry = await getRegistry(this.registryPath);
 
       const leaseCount = deletePool(registry, poolName);
@@ -410,7 +420,7 @@ export class PortManagerAPI {
       throw new Error('Pool name is required');
     }
 
-    return await withLock(async () => {
+    return await this._withRegistryLock(async () => {
       const registry = await getRegistry(this.registryPath);
 
       // Validate pool exists
